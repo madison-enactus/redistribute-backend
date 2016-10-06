@@ -48,3 +48,6 @@ ngrok -subdomain=chunky-danger-monkey 3000
 ## License
 
 MIT
+=======
+# redistribute-backend
+The backend that handles messaging and databasing. 
