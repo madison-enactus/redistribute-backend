@@ -4,7 +4,7 @@ var config = require('../config');
 // Create an authenticated Twilio REST API client
 var client = twilio(config.accountSid, config.authToken);
 
-// Render a form that will allow the user to send a text (or picture) message 
+// Render a form that will allow the user to send a text (or picture) message
 // to a phone number they entered.
 exports.showSendMessage = function(request, response) {
     response.render('sendMessage', {
@@ -20,12 +20,14 @@ exports.sendMessage = function(request, response) {
 // Show a page displaying text/picture messages that have been sent to this
 // web application, which we have stored in the database
 exports.showReceiveMessage = function(request, response) {
-
+    console.log(request);
 };
 
 // Handle a POST request from Twilio for an incoming message
 exports.receiveMessageWebhook = function(request, response) {
-
+  const body = request.body.Body
+  response.set('Content-Type', 'text/plain')
+  response.send(`You sent: ${body} to Project Redistribute!`)
 };
 
 // Update the configured Twilio number for this demo to send all incoming
