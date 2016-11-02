@@ -1,3 +1,4 @@
+var myConfig = require('./myConfig.js');
 var cfg = {};
 
 // HTTP Port to run our web application
@@ -17,12 +18,12 @@ cfg.secret = process.env.APP_SECRET || 'keyboard cat';
 
 // Your Twilio account SID and auth token, both found at:
 // https://www.twilio.com/user/account
-// 
+//
 // A good practice is to store these string values as system environment
 // variables, and load them from there as we are doing below. Alternately,
 // you could hard code these values here as strings.
-cfg.accountSid = process.env.TWILIO_ACCOUNT_SID;
-cfg.authToken = process.env.TWILIO_AUTH_TOKEN;
+cfg.accountSid = myConfig.testAccountSid;
+cfg.authToken = myConfig.testAuthToken;
 
 // A Twilio number you control - choose one from:
 // https://www.twilio.com/user/account/phone-numbers/incoming
@@ -35,7 +36,7 @@ cfg.myNumber = process.env.MY_NUMBER;
 
 // MongoDB connection string - MONGO_URL is for local dev,
 // MONGOLAB_URI is for the MongoLab add-on for Heroku deployment
-cfg.mongoUrl = process.env.MONGOLAB_URI || process.env.MONGO_URL
+cfg.mongoUrl = process.env.MONGOLAB_URI || 'mongodb://localhost/myapp'
 
 // Export configuration object
 module.exports = cfg;
