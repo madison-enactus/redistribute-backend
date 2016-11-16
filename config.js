@@ -28,15 +28,15 @@ cfg.authToken = myConfig.testAuthToken;
 // A Twilio number you control - choose one from:
 // https://www.twilio.com/user/account/phone-numbers/incoming
 // Specify in E.164 format, e.g. "+16519998877"
-cfg.twilioNumber = process.env.TWILIO_NUMBER;
+cfg.twilioNumber = myConfig.twilioNumber;
 
 // Your own mobile phone number! The app will be calling and texting you to
 // test things out. Specify in E.164 format, e.g. "+16519998877"
-cfg.myNumber = process.env.MY_NUMBER;
+cfg.myNumber = myConfig.myNumber;
 
 // MongoDB connection string - MONGO_URL is for local dev,
 // MONGOLAB_URI is for the MongoLab add-on for Heroku deployment
-cfg.mongoUrl = process.env.MONGOLAB_URI || 'mongodb://localhost/myapp'
+cfg.mongoUrl = myConfig.mLabURI || 'mongodb://localhost/myapp'
 
 // Export configuration object
 module.exports = cfg;

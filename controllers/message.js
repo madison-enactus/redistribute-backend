@@ -25,9 +25,10 @@ exports.showReceiveMessage = function(request, response) {
 
 // Handle a POST request from Twilio for an incoming message
 exports.receiveMessageWebhook = function(request, response) {
-  const body = request.body.Body
-  response.set('Content-Type', 'text/plain')
-  response.send(`You sent: ${body} to Project Redistribute!`)
+    const body = request.body.Body
+    //response.set('Content-Type', 'text/plain')
+    //response.send(`You sent: ${body} to Project Redistribute!`)
+    console.log(body);
 };
 
 // Update the configured Twilio number for this demo to send all incoming
