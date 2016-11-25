@@ -6,7 +6,7 @@ var myConfig = require('../myConfig.js');
 var client = require('twilio')(config.accountSid, config.authToken);
 
 //module variables
-var rcblurb = 'penis';
+var rcblurb = '';
 var donor = '';
 var donoraddress = '';
 var dontrepeat = 0;
