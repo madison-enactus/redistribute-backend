@@ -1,5 +1,7 @@
 var twilio = require('twilio');
 var config = require('../config');
+var myConfig = require('../myConfig.js');  // Custom configuration files
+var response = require('./response.js');
 
 // Create an authenticated Twilio REST API client
 var client = twilio(config.accountSid, config.authToken);
