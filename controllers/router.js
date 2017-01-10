@@ -13,7 +13,7 @@ module.exports = function(app) {
     app.get('/message/send', message.showSendMessage);
     app.post('/message/send', basic, message.sendMessage);
     app.get('/message', message.showReceiveMessage);
-    app.post('/message', message.receiveMessageWebhook);
+    app.post('/message', message.storeandredirect);
     app.post('/message/configure', basic, message.configureNumber);
 
     // Routes for voice examples
