@@ -2,60 +2,30 @@
 var twilio = require('twilio');
 var config = require('../config');
 var myConfig = require('../myConfig.js');
+//the tables
+var number = require('../controllers/NumberSchema.js')
+var donation = require('../controllers/DonationSchema.js')
+var message = require('../controllers/MessageSchema.js')
 
 //Create an authenticated Twilio REST API client
 var client = require('twilio')(config.accountSid, config.authToken);
 
 //global variables
-  //the numberproperties object essentially duplicates the NumberTable. We
-  //may not need it, since we might directly reference the NumberTable. For now
-  //it provides a simple way to access this information.
-  var numberproperties = {number:'', type:'', location:'', name:'', created:'',
-                open:'', close:'', linkednumbers:'', storage:'',
-                scheduledpickups:'', status:''};
-  var message = '' //from request.body.Body, ie 'chicken, 30, 01/26 2200'
+  var numberproperties = {
+    number:'',
+    type:'',
+    location:'',
+    name:'',
+    created:'',
+    open:'',
+    close:'',
+    linkednumbers:'',
+    storage:'',
+    scheduledpickups:'',
+    status:''
+  };
 
-//COLUMNS FOR THE TABLES:
-  //The NumberTable
-  // number = '' //format +12628227987
-  // type = '' //either RC, D, V, A, or U (rec. ctr, donor, vol, admin, or unknown)
-  // location = '' //the address of the RC/Donor/Volunteer
-  // name = '' //i.e 'UW Hosptial' or 'Porchlight' or 'Morty Smith'
-  // created = '' //the date that the number was stored in the table, '1.26.17'
-  // open = '' //time that the donor opens, the RC opens, the vol is first avail
-  //           //i.e, 'M0800,H1700,S1230,U0900' for available starting
-  //           //Monday at 8am, Thursday at 5pm, Sat. at 12:30p , and Sun. at 9am
-  // close = '' //same idea as open, but for close times/volunteer no longer avail
-  // linkednumbers = '' //used to tie donors to volunteers and RC's,
-  //                    // i.e. 'V+12628227897,RC+12628227897' or 'RC+12628227897'
-  //                    // to tie both a vol and RC to a donor, or just an RC
-  // storage = '' //either Y or N, denoting whether the donor, RC, or vol can store
-  //              // donations overnight at their location
-  // scheduledpickups = '' //allow donors, volunteers, and RC's to be texted at
-  //                       //specific times for scheduled, consistant donations
-  // status = '' //either IP (In process) or NEW (Not in Process) to denote whether
-  //             //the volunteer/RC/donor is currently working on a donations
-  //
-  // //The DonationsTable
-  // donationID = '' //the unique ID associated with a donations
-  // donorName = '' //i.e. 'Banzo Madison'
-  // rcName = '' //i.e. 'UW Financial Aid Office'
-  // volName = '' //i.e. 'Jason Funderburger'
-  // lbs = '' //the integer weight of the donation in pounds, ie '30'
-  // type = '' //the type of food being donated, ie 'Meat'
-  // recievied = '' //the date & time the donatoin was recieved, ie '01.26.17.0900'
-  // deadline = '' // the date & time deadline for pickup ie '01.26.17.1930'
-  // status = '' //either O, C, P, or D for open, closed, picked up, or dropped,
-  //             // representing a donation that has been proposed but no RC or no
-  //             // vol, a don. with a vol and RC but no confirmation of pickup, a
-  //             // donation with confirmed pickup, and a dropped donation.
-  // value = '' //the value of the donation, as determined by its weight & category
-  // details = '' //any special details associated with the donation
-  //
-  // //The MessagesTable
-  // number = '' //the number the message was recieved from, ie '+12628227897'
-  // message = '' //the text of the message
-  // dateandtime = '' //ie '1.26.17.1449' for Jan. 26 2017 at 2:49 PM
+  var message = '' //from request.body.Body, ie 'chicken, 30, 01/26 2200'
 
 //First, capture and store the message. Then, redirect to the relavent
 //  process depending on whether the number is donor, volunteer, RC, or other
@@ -65,7 +35,8 @@ exports.storeandredirect = function(request, response) {
   numberproperties.number = request.body.From;
   message = request.body.Body;
 
-  //TODO: Store the message in the MessagesTable
+  //Store the message in the MessagesTable
+  storeMessage(message);
 
   //Redirects to the appropriate V, RC, D, or U function
   if (numberIsDonor(numberproperties.number)) {
@@ -81,26 +52,86 @@ exports.storeandredirect = function(request, response) {
 
 //returns true if the number is a donor's number
 numberIsDonor = function(number) {
+    //find the number in the NumberTable
+    number.find({number: numberproperties.number}, function(err, user) {
+      if (err) return false;
 
-  //TODO: cycle through NumberTable and see if the number is a donor's
-
-  return true
+      // if the type is D, return true
+      if (number.type == 'D') {
+        //set all the numberproperties variables and return true
+        numberproperties.number = number.number;
+        numberproperties.type = number.type;
+        numberproperties.location = number.location;
+        numberproperties.name = number.name
+        numberproperties.created = number.created
+        numberproperties.open = number.open;
+        numberproperties.close = number.close;
+        numberproperties.linkednumbers = number.linkednumbers;
+        numberproperties.storage = number.storage;
+        numberproperties.scheduledpickups = number.scheduledpickups;
+        numberproperties.status = number.status;
+        return true
+      }
+      else {
+        return false
+      }
+    });
 }
 
 //returns true if the number is an RC's number
 numberIsRC = function(number) {
+  //find the number in the NumberTable
+  number.find({number: numberproperties.number}, function(err, user) {
+    if (err) return false;
 
-  //TODO: cycle through NumberTable and see if the number is an RC's
-
-  return true
+    // if the type is RC, return true
+    if (number.type == 'RC') {
+      //set all the numberproperties variables and return true
+      numberproperties.number = number.number;
+      numberproperties.type = number.type;
+      numberproperties.location = number.location;
+      numberproperties.name = number.name
+      numberproperties.created = number.created
+      numberproperties.open = number.open;
+      numberproperties.close = number.close;
+      numberproperties.linkednumbers = number.linkednumbers;
+      numberproperties.storage = number.storage;
+      numberproperties.scheduledpickups = number.scheduledpickups;
+      numberproperties.status = number.status;
+      return true
+    }
+    else {
+      return false
+    }
+  });
 }
 
 //returns true if the number is a volunteer's number
 numberIsVolunteer = function(number) {
+  //find the number in the NumberTable
+  number.find({number: numberproperties.number}, function(err, user) {
+    if (err) throw err;
 
-  //TODO: cycle through NumberTable and see if the number is a volunteer's
-
-  return true
+    // if the type is V, return true
+    if (number.type == 'V') {
+      //set all the numberproperties variables and return true
+      numberproperties.number = number.number;
+      numberproperties.type = number.type;
+      numberproperties.location = number.location;
+      numberproperties.name = number.name
+      numberproperties.created = number.created
+      numberproperties.open = number.open;
+      numberproperties.close = number.close;
+      numberproperties.linkednumbers = number.linkednumbers;
+      numberproperties.storage = number.storage;
+      numberproperties.scheduledpickups = number.scheduledpickups;
+      numberproperties.status = number.status;
+      return true
+    }
+    else {
+      return false
+    }
+  });
 }
 
 //processes donor texts
@@ -108,8 +139,8 @@ processDonor = function() {
   //if the donor is creating a new donation, ie this is the first text we get,
   //number.status (represents the status variable associated with the number in
   //the NumberTable) will equal 'NEW', the default
-  if numberproperties.status = 'NEW' {
-    if inDonationFormat() {
+  if (numberproperties.status == 'NEW') {
+    if (inDonationFormat()) {
       //TODO: create a new entry in the DonationsTable
       //TODO: notify all RC's within open/close times
       //TODO: notify all volunteers within open/close times
@@ -277,10 +308,13 @@ processVolunteer = function() {
         }
       }
       else if (message == 'NO') {
-
+        //TODO: change the volunteer status to new
+        //TODO: reply to volunteer
       }
       else if (message == 'DONE') {
-
+        //TODO: change all status's to new
+        //TODO: change donation status to P
+        //TODO: reply to volunteer
       }
       else if (message == 'HELP') {
         messagetoadmins = 'Vol ' + numberproperties.name + 'has sent: "' + message
@@ -366,9 +400,36 @@ inDonationFormat = function() {
   };
   return false;
   };
-}
 
+//stores messages in the MessageTable
+  function storeMessage(message) {
+    var newMessage = message({
+      number: numberproperties.number,
+      message: message,
+      var now = new Date();
+      dateandtime: now.getMonth() + '.' + now.getDate() + '.' +
+        right(now.getFullYear(), 2) + '.' + now.getHours() + now.getMinutes()
+    });
+
+    // save the user
+    newMessage.save(function(err) {
+    if (err) throw err;
+
+    console.log('User created!');
+    });
+  }
+//returns the rightmost characters
+  function right(str, chr)
+  {
+  return str.slice(myString.length-chr,myString.length);
+  }
+//returns the leftmost characters
+  function left(str, chr)
+  {
+  return str.slice(0, chr - myString.length);
+  }
 //Functions in the template we may or may not delete later
+
 
   // Render a form that will allow the user to send a text (or picture) message
   // to a phone number they entered.
