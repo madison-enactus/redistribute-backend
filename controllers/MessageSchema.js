@@ -10,7 +10,7 @@ var Schema = mongoose.Schema;
 var messageSchema = new Schema({
   number: String, //the number the message was recieved from, ie '+12628227897'
   message: String, //the text of the message
-  dateandtime: String, //ie '1.26.17.1449' for Jan. 26 2017 at 2:49 PM
+  dateandtime: String //ie '1.26.17.1449' for Jan. 26 2017 at 2:49 PM
 });
 
 //if we need it...
@@ -20,8 +20,8 @@ messageSchema.methods.customMethod1 = function() {
 
 // the schema is useless so far
 // we need to create a model using it
-var message = mongoose.model('message', messageSchema);
+var MessageTable = mongoose.model('MessageTable', messageSchema);
 
 
 // make this available to our users in our Node applications
-module.exports = message;
+module.exports = MessageTable;
