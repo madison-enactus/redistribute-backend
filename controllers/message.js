@@ -3,9 +3,9 @@ var twilio = require('twilio');
 var config = require('../config');
 var myConfig = require('../myConfig.js');
 //the tables
-var number = require('../controllers/NumberSchema.js')
-var donation = require('../controllers/DonationSchema.js')
-var message = require('../controllers/MessageSchema.js')
+var NumberTable = require('../controllers/NumberSchema.js')
+var DonationTable = require('../controllers/DonationSchema.js')
+var MessageTable = require('../controllers/MessageSchema.js')
 
 //Create an authenticated Twilio REST API client
 var client = require('twilio')(config.accountSid, config.authToken);
@@ -24,13 +24,11 @@ var client = require('twilio')(config.accountSid, config.authToken);
     scheduledpickups:'',
     status:''
   };
-
   var message = '' //from request.body.Body, ie 'chicken, 30, 01/26 2200'
 
 //First, capture and store the message. Then, redirect to the relavent
 //  process depending on whether the number is donor, volunteer, RC, or other
 exports.storeandredirect = function(request, response) {
-
   //store the temporary number and message variables
   numberproperties.number = request.body.From;
   message = request.body.Body;
@@ -39,65 +37,106 @@ exports.storeandredirect = function(request, response) {
   storeMessage(message);
 
   //Redirects to the appropriate V, RC, D, or U function
-  if (numberIsDonor(numberproperties.number)) {
-    processDonor();
+  if ( numberIsDonor(numberproperties.number) ) {
+    //processDonor is now called from within numberIsDonor
   } else if (numberIsRC(numberproperties.number)) {
-    processRC();
+
   } else if (numberIsVolunteer(numberproperties.number)) {
-    processVolunteer();
-  } else {
+
+  } else if (creating()) {
+      //if the user is signing up, split into csv and make a new entry in NumberTable
+      var temp = new Array();
+      temp = message.split(",");
+      for (var i = 0; i < temp.length; i++) {
+        temp[i] = temp[i].replace(/\s/g,'');
+      }
+      //(num, type, location, name, open, close, linkednumbers, storage, scheduledpickups)
+      makeNumber(numberproperties.number, temp[1], temp[2], temp[3], temp[4], temp[5], temp[6], temp[7], temp[8]);
+  }
+  else {
     processUnknown();
   };
 };
 
 //returns true if the number is a donor's number
-numberIsDonor = function(number) {
+numberIsDonor = function(num) {
     //find the number in the NumberTable
-    number.find({number: numberproperties.number}, function(err, user) {
-      if (err) return false;
+    return NumberTable.findOne({ number: num }, function(err, numtable) {
+      if (err) throw console.error();
 
       // if the type is D, return true
-      if (number.type == 'D') {
+      if (numtable.type === "D") {
         //set all the numberproperties variables and return true
-        numberproperties.number = number.number;
-        numberproperties.type = number.type;
-        numberproperties.location = number.location;
-        numberproperties.name = number.name
-        numberproperties.created = number.created
-        numberproperties.open = number.open;
-        numberproperties.close = number.close;
-        numberproperties.linkednumbers = number.linkednumbers;
-        numberproperties.storage = number.storage;
-        numberproperties.scheduledpickups = number.scheduledpickups;
-        numberproperties.status = number.status;
-        return true
+        numberproperties.number = numtable.number;
+        numberproperties.type = numtable.type;
+        numberproperties.location = numtable.location;
+        numberproperties.name = numtable.name
+        numberproperties.created = numtable.created
+        numberproperties.open = numtable.open;
+        numberproperties.close = numtable.close;
+        numberproperties.linkednumbers = numtable.linkednumbers;
+        numberproperties.storage = numtable.storage;
+        numberproperties.scheduledpickups = numtable.scheduledpickups;
+        numberproperties.status = numtable.status;
+        //call the donor function if true
+        processDonor();
       }
       else {
-        return false
+        return false;
       }
     });
 }
 
 //returns true if the number is an RC's number
-numberIsRC = function(number) {
+numberIsRC = function(num) {
   //find the number in the NumberTable
-  number.find({number: numberproperties.number}, function(err, user) {
-    if (err) return false;
+  return NumberTable.findOne({ number: num }, function(err, numtable) {
+    if (err) throw err;
 
     // if the type is RC, return true
-    if (number.type == 'RC') {
+    if (numtable.type === 'RC') {
       //set all the numberproperties variables and return true
-      numberproperties.number = number.number;
-      numberproperties.type = number.type;
-      numberproperties.location = number.location;
-      numberproperties.name = number.name
-      numberproperties.created = number.created
-      numberproperties.open = number.open;
-      numberproperties.close = number.close;
-      numberproperties.linkednumbers = number.linkednumbers;
-      numberproperties.storage = number.storage;
-      numberproperties.scheduledpickups = number.scheduledpickups;
-      numberproperties.status = number.status;
+      numberproperties.number = numtable.number;
+      numberproperties.type = numtable.type;
+      numberproperties.location = numtable.location;
+      numberproperties.name = numtable.name
+      numberproperties.created = numtable.created
+      numberproperties.open = numtable.open;
+      numberproperties.close = numtable.close;
+      numberproperties.linkednumbers = numtable.linkednumbers;
+      numberproperties.storage = numtable.storage;
+      numberproperties.scheduledpickups = numtable.scheduledpickups;
+      numberproperties.status = numtable.status;
+      processRC();
+      return true
+    }
+    else {
+      return true
+    }
+  });
+}
+
+//returns true if the number is a volunteer's number
+numberIsVolunteer = function(num) {
+  //find the number in the NumberTable
+  return NumberTable.findOne({number: num}, function(err, numtable) {
+    if (err) throw err;
+
+    // if the type is V, return true
+    if (numtable.type == 'V') {
+      //set all the numberproperties variables and return true
+      numberproperties.number = numtable.number;
+      numberproperties.type = numtable.type;
+      numberproperties.location = numtable.location;
+      numberproperties.name = numtable.name
+      numberproperties.created = numtable.created
+      numberproperties.open = numtable.open;
+      numberproperties.close = numtable.close;
+      numberproperties.linkednumbers = numtable.linkednumbers;
+      numberproperties.storage = numtable.storage;
+      numberproperties.scheduledpickups = numtable.scheduledpickups;
+      numberproperties.status = numtable.status;
+      processVolunteer();
       return true
     }
     else {
@@ -106,32 +145,14 @@ numberIsRC = function(number) {
   });
 }
 
-//returns true if the number is a volunteer's number
-numberIsVolunteer = function(number) {
-  //find the number in the NumberTable
-  number.find({number: numberproperties.number}, function(err, user) {
-    if (err) throw err;
-
-    // if the type is V, return true
-    if (number.type == 'V') {
-      //set all the numberproperties variables and return true
-      numberproperties.number = number.number;
-      numberproperties.type = number.type;
-      numberproperties.location = number.location;
-      numberproperties.name = number.name
-      numberproperties.created = number.created
-      numberproperties.open = number.open;
-      numberproperties.close = number.close;
-      numberproperties.linkednumbers = number.linkednumbers;
-      numberproperties.storage = number.storage;
-      numberproperties.scheduledpickups = number.scheduledpickups;
-      numberproperties.status = number.status;
-      return true
-    }
-    else {
-      return false
-    }
-  });
+//determine whether we are adding something to the NumberTable
+creating = function() {
+  if (left(message, 3) === 'ADD') {
+    return true
+  }
+  else {
+    return false
+  }
 }
 
 //processes donor texts
@@ -139,7 +160,7 @@ processDonor = function() {
   //if the donor is creating a new donation, ie this is the first text we get,
   //number.status (represents the status variable associated with the number in
   //the NumberTable) will equal 'NEW', the default
-  if (numberproperties.status == 'NEW') {
+  if (numberproperties.status === 'NEW') {
     if (inDonationFormat()) {
       //TODO: create a new entry in the DonationsTable
       //TODO: notify all RC's within open/close times
@@ -148,7 +169,7 @@ processDonor = function() {
         ': ' + message
       notifyadmins(messagetoadmins);
     }
-    else if (message == 'HELP') {
+    else if (message === 'HLP') {
       messagetoadmins = 'HELP request from ' + numberproperties.name
       notifyadmins(messagetoadmins);
       helpmessage = 'Thank you for contacting PR help. Admins have been notified'
@@ -159,7 +180,7 @@ processDonor = function() {
       errormessage = "Thank you for texting Project Redistribute. We didn't "
       + "understand that. Please donate in this format: food type, quantity in "
       + "lbs, pickup deadline, other details. For example: baked goods, 10, 1/28 "
-      + "9pm, ask for Steve. If this fails, text HELP to notify admins."
+      + "9pm, ask for Steve. If this fails, text HLP to notify admins."
       sendoutmessage(numberproperties.number, errormessage);
     }
   }
@@ -170,7 +191,7 @@ processDonor = function() {
     if (numberproperties.linkednumbers == '') {
       inprocessmessage = 'Your donation is currently waiting for a recieving'
       + ' center and/or volunteer. You will be notified when it is claimed.'
-      + ' Text HELP for more details.'
+      + ' Text HLP for more details.'
       sendoutmessage(numberproperties.number, inprocessmessage);
     }
     //if the linkednumbers field has a number, redirect the text to that number
@@ -184,6 +205,7 @@ processDonor = function() {
     notifyadmins(errormessage);
   }
 }
+
 
 //processes recieving center texts
 processRC = function() {
@@ -242,7 +264,7 @@ processRC = function() {
         + 'as unavailable.'
         sendoutmessage(numberproperties.number, thankyoumessage);
       }
-      if (message == 'HELP') {
+      if (message == 'HLP') {
         messagetoadmins = 'IP RC' + numberproperties.name  + ' w/ no linked '
         + 'numbers sent: ' + message
         notifyadmins(messagetoadmins);
@@ -256,7 +278,7 @@ processRC = function() {
         notifyadmins(messagetoadmins);
         errormessage = 'You are marked as pending claim. We expected YES or NO '
         + 'and your response did not match either. Please respond with either '
-        + 'YES or NO or reply HELP to contact an admin.'
+        + 'YES or NO or reply HLP to contact an admin.'
         sendoutmessage(numberproperties.number, errormessage)
       }
     }
@@ -316,14 +338,14 @@ processVolunteer = function() {
         //TODO: change donation status to P
         //TODO: reply to volunteer
       }
-      else if (message == 'HELP') {
+      else if (message == 'HLP') {
         messagetoadmins = 'Vol ' + numberproperties.name + 'has sent: "' + message
         + '" while in process.'
         notifyadmins(messagetoadmins);
       }
       else {
         errormessage = 'Sorry, we were expecting "YES", "NO", or "DONE". If you'
-        + ' need to contact admins, reply "HELP"'
+        + ' need to contact admins, reply "HLP"'
         sendoutmessage(numberproperties.number, errormessage);
       }
     }
@@ -342,7 +364,7 @@ processUnknown = function() {
   notifyadmins(messagetoadmins);
   reply = 'Thank you for contacting Project Redistribute. It looks like you are'
   + ' not yet in our system. An admin will contact you shortly.'
-  sendoutmessage(reply);
+  sendoutmessage(numberproperties.number, reply);
 }
 
 //sends messages
@@ -356,6 +378,7 @@ client.sendMessage({
 
 //notifies admins of errors or donations
 notifyadmins = function(message) {
+  console.log(message);
   //TODO: for each admin in NumberTable, call sendoutmessage with the msg body
 }
 
@@ -384,8 +407,10 @@ inDonationFormat = function() {
   //quantity is before the second comma
   var quantity = temp[1];
   //remove all white space that may surround the quantity and converts to a #
-  quantity = quantity.replace(/\s/g,'');
-  quantity = parseInt(quantity, 10);
+  if (quantity != null) {
+    quantity = quantity.replace(/\s/g,'');
+    quantity = parseInt(quantity, 10);
+  }
   //deadline is final or before the third comma
   var deadline = temp[2];
   //additional info is after the third comma, if it exists
@@ -403,30 +428,69 @@ inDonationFormat = function() {
 
 //stores messages in the MessageTable
   function storeMessage(message) {
-    var newMessage = message({
+    var currentTime = new Date();
+    var newMessage = MessageTable({
       number: numberproperties.number,
       message: message,
-      var now = new Date();
-      dateandtime: now.getMonth() + '.' + now.getDate() + '.' +
-        right(now.getFullYear(), 2) + '.' + now.getHours() + now.getMinutes()
+      dateandtime: (currentTime.getMonth() + 1) + '.' + currentTime.getDate() + '.' +
+        right(currentTime.getFullYear(), 2) + '.' + currentTime.getHours() + currentTime.getMinutes()
     });
 
     // save the user
     newMessage.save(function(err) {
     if (err) throw err;
 
-    console.log('User created!');
+    console.log('Message created!');
+
     });
   }
-//returns the rightmost characters
-  function right(str, chr)
-  {
-  return str.slice(myString.length-chr,myString.length);
+
+//create a number entry in the NumberTable
+  function makeNumber(num, type, location, name, open, close, linkednumbers, storage, scheduledpickups) {
+    var currentTime = new Date();
+    var newNumber = NumberTable({
+      number: num, //format +12628227987
+      type: type, //either RC, D, V, A, or U (rec. ctr, donor, vol, admin, or unknown)
+      location: location, //the address of the RC/Donor/Volunteer
+      name: name,  //i.e 'UW Hosptial' or 'Porchlight' or 'Morty Smith'
+      created: (currentTime.getMonth() + 1) + '.' + currentTime.getDate() + '.' +
+        right(currentTime.getFullYear(), 2) + '.' + currentTime.getHours() + currentTime.getMinutes(),
+      open: open,
+      close: close, //same idea as open, but for close times/volunteer no longer avail
+      linkednumbers: linkednumbers,
+      storage: storage,
+      scheduledpickups: scheduledpickups,
+      status: 'NEW'
+    });
+
+    // save the user
+    newNumber.save(function(err) {
+    if (err) throw err;
+
+    console.log('Number created!');
+
+    });
   }
-//returns the leftmost characters
-  function left(str, chr)
-  {
-  return str.slice(0, chr - myString.length);
+
+  //grab those leftmost chars
+  function left(str, n){
+  	if (n <= 0)
+  	    return "";
+  	else if (n > String(str).length)
+  	    return str;
+  	else
+  	    return String(str).substring(0,n);
+  }
+  //grab those rightmost chars
+  function right(str, n){
+      if (n <= 0)
+         return "";
+      else if (n > String(str).length)
+         return str;
+      else {
+         var iLen = String(str).length;
+         return String(str).substring(iLen, iLen - n);
+      }
   }
 //Functions in the template we may or may not delete later
 
