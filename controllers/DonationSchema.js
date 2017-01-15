@@ -32,7 +32,7 @@ var donationSchema = new Schema({
   //             // vol, a don. with a vol and RC but no confirmation of pickup, a
   //             // donation with confirmed pickup, and a dropped donation.
   value: Number, //the value of the donation, as determined by its weight & category
-  details: String, //any special details associated with the donation
+  details: String //any special details associated with the donation
 });
 
 //if we need it...
@@ -42,8 +42,8 @@ donationSchema.methods.customMethod1 = function() {
 
 // the schema is useless so far
 // we need to create a model using it
-var donation = mongoose.model('donation', donationSchema);
+var DonationTable = mongoose.model('DonationTable', donationSchema);
 
 
 // make this available to our users in our Node applications
-module.exports = donation;
+module.exports = DonationTable;
