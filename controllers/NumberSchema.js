@@ -40,7 +40,7 @@ var numberSchema = new Schema({
                    // donations overnight at their location
   scheduledpickups: String, //allow donors, volunteers, and RC's to be texted at
                             //specific times for scheduled, consistant donations
-  status: String, //either IP (In process) or NEW (Not in Process) to denote whether
+  status: String //either IP (In process) or NEW (Not in Process) to denote whether
                   //the volunteer/RC/donor is currently working on a donations
 });
 
@@ -51,8 +51,8 @@ numberSchema.methods.customMethod1 = function() {
 
 // the schema is useless so far
 // we need to create a model using it
-var number = mongoose.model('number', numberSchema);
+var NumberTable = mongoose.model('NumberTable', numberSchema);
 
 
 // make this available to our users in our Node applications
-module.exports = number;
+module.exports = NumberTable;
