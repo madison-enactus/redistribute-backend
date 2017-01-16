@@ -26,6 +26,7 @@ var client = require('twilio')(config.accountSid, config.authToken);
   };
   var message = '' //from request.body.Body, ie 'chicken, 30, 01/26 2200'
 
+
 //First, capture and store the message. Then, redirect to the relavent
 //  process depending on whether the number is donor, volunteer, RC, or other
 exports.storeandredirect = function(request, response) {
@@ -40,9 +41,9 @@ exports.storeandredirect = function(request, response) {
   if ( numberIsDonor(numberproperties.number) ) {
     //processDonor is now called from within numberIsDonor
   } else if (numberIsRC(numberproperties.number)) {
-
+    //processRC is now called from within numberIsRC
   } else if (numberIsVolunteer(numberproperties.number)) {
-
+    //processV is now called from within numberIsV
   } else if (creating()) {
       //if the user is signing up, split into csv and make a new entry in NumberTable
       var temp = new Array();
@@ -162,9 +163,49 @@ processDonor = function() {
   //the NumberTable) will equal 'NEW', the default
   if (numberproperties.status === 'NEW') {
     if (inDonationFormat()) {
-      //TODO: create a new entry in the DonationsTable
-      //TODO: notify all RC's within open/close times
-      //TODO: notify all volunteers within open/close times
+      //add a line to DonationTable
+        //done in inDonationFormat
+      //notify all RC's within open/close times
+        //iterate through each RC in the NumberTable
+        NumberTable.find({type: 'RC'}).stream()
+          .on('data', function(num){
+            //find the donation properties
+            DonationTable.findOne({status: 'O'}, function(err, don) {
+              if (err) console.log('yfu');
+              //message the RC's w/ the donation info
+              messagetoRC = numberproperties.name + ' has donated ' + don.lbs +
+                ' lbs of ' + don.type + ' to be picked up by ' + don.deadline + '. Do '
+                + 'you have clients who could use it? Reply YES if yes, NO if no.'
+              sendoutmessage(num.number, messagetoRC);
+            });
+          })
+          .on('error', function(err){
+            // handle error
+          })
+          .on('end', function(){
+            // final callback
+          });
+      //Notify all volunteers within open/close times
+        //iterate through each RC in the NumberTable
+        NumberTable.find({type: 'V'}).stream()
+          .on('data', function(num){
+            //find the donation properties
+            DonationTable.findOne({status: 'O'}, function(err, don) {
+              if (err) console.log('yfu');
+              //message the RC's w/ the donation info
+              messagetoV = numberproperties.name + ' has donated ' + don.lbs +
+                ' lbs of ' + don.type + ' to be picked up by ' + don.deadline +
+                + ' from ' + don.location + '. Can you pick it up?'
+              sendoutmessage(num.number, messagetoRC);
+            });
+          })
+          .on('error', function(err){
+            // handle error
+          })
+          .on('end', function(){
+            // final callback
+          });
+      //notify admins of a succesful donation
       messagetoadmins = 'Successful donation from ' + numberproperties.name +
         ': ' + message
       notifyadmins(messagetoadmins);
@@ -419,6 +460,8 @@ inDonationFormat = function() {
   if (temp.length > 2 && temp.length < 5) {
     //true if quantity is an integer
     if (Number.isInteger(quantity)) {
+      //create an entry in the table
+      makeDonation(quantity, food, deadline, addinfo);
       return true;
     };
     return false;
@@ -472,6 +515,37 @@ inDonationFormat = function() {
     });
   }
 
+  function makeDonation(lbs, type, deadline, details) {
+    var currentTime = new Date();
+    var newDonation = DonationTable({
+      donationID: Math.random()*10000000, //the unique ID associated with a donations
+      donorName: numberproperties.name, //i.e. 'Banzo Madison'
+      rcName: '', //i.e. 'UW Financial Aid Office'
+      volName: '',  //i.e. 'Jason Funderburger'
+      lbs: lbs, //the integer weight of the donation in pounds, ie '30'
+      type: type, //the type of food being donated, ie 'Meat'
+      //the date & time the donatoin was recieved, ie '01.26.17.0900'
+      recieved: (currentTime.getMonth() + 1) + '.' + currentTime.getDate() + '.' +
+        right(currentTime.getFullYear(), 2) + '.' + currentTime.getHours() + currentTime.getMinutes(),
+      deadline: deadline, // the date & time deadline for pickup ie '01.26.17.1930'
+      status: 'O', //either O, C, P, or D for open, closed, picked up, or dropped,
+      //             // representing a donation that has been proposed but no RC or no
+      //             // vol, a don. with a vol and RC but no confirmation of pickup, a
+      //             // donation with confirmed pickup, and a dropped donation.
+      value: getValue(lbs, type), //the value of the donation, as determined by its weight & category
+      details: details, //any special details associated with the donation
+      location: numberproperties.location
+    });
+
+    // save the user
+    newDonation.save(function(err) {
+    if (err) throw err;
+
+    console.log('Donation created!');
+
+    });
+  }
+
   //grab those leftmost chars
   function left(str, n){
   	if (n <= 0)
@@ -491,6 +565,12 @@ inDonationFormat = function() {
          var iLen = String(str).length;
          return String(str).substring(iLen, iLen - n);
       }
+  }
+
+  //determines value by the type and weight
+  function getValue(lbs, type){
+    //TODO: make this a little more sophisticated
+    return lbs*2
   }
 //Functions in the template we may or may not delete later
 
