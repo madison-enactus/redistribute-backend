@@ -137,7 +137,7 @@ numberIsVolunteer = function(num) {
       numberproperties.storage = numtable.storage;
       numberproperties.scheduledpickups = numtable.scheduledpickups;
       numberproperties.status = numtable.status;
-      processVolunteer();
+      processVolunteer(numberproperties.number);
       return true
     }
     else {
@@ -332,14 +332,19 @@ processRC = function() {
 }
 
 //processes volunteer texts
-processVolunteer = function() {
+processVolunteer = function(num) {
+  DonationsTable.findOne({ volunteerNum: num }, function(err, donor){
+    if (err) throw err;
   //if the volunteer is already linked to a donor, send to linked numbers
-  if (numberproperties.linkednumbers.includes("D")) {
+  // if donor is not null means donor is found
+  if (donor) {
+    //donor is found
     sendtolinked(message);
   }
-  else {
+  else { // donor that has volunteer's number is found
     if (numberproperties.status == 'IP') {
       if (message == 'YES') {
+
         //if the donation already has a volunteer (theoretically never reached)
         if (donorIsLinkedTo("V")) {
           //let the volunteer know there is another volunteer
@@ -352,15 +357,24 @@ processVolunteer = function() {
         //if there is no existing volunteer and there is an RC
         else if (donorIsLinkedTo("RC")) {
           //TODO: notify donor
+          messagetodonor = 'There is a new volunteer available'
+          sendoutmessage(donor.donorNumber, messagetodonor);
           //TODO: add volunteer to DonationsTable
+           donor.linkVolunteer(numberproperties.number);
           //TODO: notify RC
+          messagetoRC = 'There is a new volunteer available'
+          sendoutmessage(donor.rcNumber, messagetoRC);
           //TODO: reply to volunteer
+          messagetovolunteer= 'We found you a match from ....'
+          sendoutmessage(numberproperties.number, messagetovolunteer);
           //TODO: link volunteer to donor
           //TODO: link volunteer to RC
           //TODO: change all other volunteer status's to new
           //TODO: change donation status to "C"
+          donor.status = "C"
         }
         //if there is no existing volunteer and there is no RC
+        // jason : how can there be no existing volunteer if we are processing a volunteer's number?
         else {
           //TODO: link volunteer to donor
           //TODO: add volunteer to DonationsTable
@@ -395,7 +409,8 @@ processVolunteer = function() {
       + '" while not in process'
       notifyadmins(messagetoadmins);
     }
-  }
+   }
+ })
 }
 
 //processes unknown texts. Could make this into a more sophisticated signup
@@ -461,7 +476,7 @@ inDonationFormat = function() {
     //true if quantity is an integer
     if (Number.isInteger(quantity)) {
       //create an entry in the table
-      makeDonation(quantity, food, deadline, addinfo);
+      makeDonation(quantity, food, deadline, addinfo, numberproperties.number);
       return true;
     };
     return false;
@@ -515,11 +530,12 @@ inDonationFormat = function() {
     });
   }
 
-  function makeDonation(lbs, type, deadline, details) {
+  function makeDonation(lbs, type, deadline, details, number) {
     var currentTime = new Date();
     var newDonation = DonationTable({
       donationID: Math.random()*10000000, //the unique ID associated with a donations
       donorName: numberproperties.name, //i.e. 'Banzo Madison'
+      donorNumber: number
       rcName: '', //i.e. 'UW Financial Aid Office'
       volName: '',  //i.e. 'Jason Funderburger'
       lbs: lbs, //the integer weight of the donation in pounds, ie '30'
