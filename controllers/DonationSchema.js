@@ -32,8 +32,8 @@ var donationSchema = new Schema({
   //             // vol, a don. with a vol and RC but no confirmation of pickup, a
   //             // donation with confirmed pickup, and a dropped donation.
   value: Number, //the value of the donation, as determined by its weight & category
-  details: String //any special details associated with the donation
-  location: String; //where the donation should be picked up from
+  details: String, //any special details associated with the donation
+  location: String, //where the donation should be picked up from
 });
 
 //if we need it...
