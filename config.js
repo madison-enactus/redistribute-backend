@@ -22,21 +22,21 @@ cfg.secret = process.env.APP_SECRET || 'keyboard cat';
 // A good practice is to store these string values as system environment
 // variables, and load them from there as we are doing below. Alternately,
 // you could hard code these values here as strings.
-cfg.accountSid = myConfig.testAccountSid;
-cfg.authToken = myConfig.testAuthToken;
+cfg.accountSid = process.env.ACCOUNT_SID || myConfig.testAccountSid;
+cfg.authToken = process.env.ACCOUNT_AUTH_TOKEN || myConfig.testAuthToken;
 
 // A Twilio number you control - choose one from:
 // https://www.twilio.com/user/account/phone-numbers/incoming
 // Specify in E.164 format, e.g. "+16519998877"
-cfg.twilioNumber = myConfig.twilioNumber;
+cfg.twilioNumber = process.env.TWILIO_NUMBER || myConfig.twilioNumber;
 
 // Your own mobile phone number! The app will be calling and texting you to
 // test things out. Specify in E.164 format, e.g. "+16519998877"
-cfg.myNumber = myConfig.myNumber;
+cfg.myNumber = process.env.MY_NUMBER || myConfig.myNumber;
 
 // MongoDB connection string - MONGO_URL is for local dev,
 // MONGOLAB_URI is for the MongoLab add-on for Heroku deployment
-cfg.mongoUrl = myConfig.mLabURI || 'mongodb://localhost/myapp'
+cfg.mongoUrl = process.env.MONGOLAB_URI || myConfig.mLabURI
 
 // Export configuration object
 module.exports = cfg;

@@ -26,13 +26,13 @@ var client = require('twilio')(config.accountSid, config.authToken);
   };
   var message = '' //from request.body.Body, ie 'chicken, 30, 01/26 2200'
 
-
 //First, capture and store the message. Then, redirect to the relavent
 //  process depending on whether the number is donor, volunteer, RC, or other
-exports.storeandredirect = function(request, response) {
+exports.storeAndRedirect = function(request, response) {
   //store the temporary number and message variables
   numberproperties.number = request.body.From;
   message = request.body.Body;
+  console.log(message);
 
   //Store the message in the MessagesTable
   storeMessage(message);
@@ -66,6 +66,7 @@ numberIsDonor = function(num) {
       if (err) throw console.error();
 
       // if the type is D, return true
+      if(!numtable) return false;
       if (numtable.type === "D") {
         //set all the numberproperties variables and return true
         numberproperties.number = numtable.number;
@@ -595,6 +596,9 @@ inDonationFormat = function() {
 
   // Handle a POST request from Twilio for an incoming message
   exports.receiveMessageWebhook = function(request, response) {
+    const body = request.body.Body
+    response.set('Content-Type', 'text/plain')
+    response.send(`You sent: ${body} to Project Redistribute!`)
   };
 
   // Update the configured Twilio number for this demo to send all incoming
